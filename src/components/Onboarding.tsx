@@ -118,7 +118,12 @@ export function Onboarding({ taste, setTaste, onDone }: { taste: Taste; setTaste
                 <p className="muted" style={{ margin: "6px 0 0" }}>Swipe to rate. Up if you haven&apos;t seen it.</p>
               </div>
               {deck ? (
-                <SwipeDeck key={deck.map((m) => m.id).join("-")} movies={deck} onRate={onRate} onEmpty={finishSwipe} tutorial={rated.length === 0} />
+                <SwipeDeck key={deck.map((m) => m.id).join("-")} movies={deck} onRate={onRate} onEmpty={finishSwipe} tutorial={rated.length === 0}
+                  footer={rated.length >= 6 ? (
+                    <button className="btn btn-glass rise" style={{ height: 44, fontSize: 15 }} onClick={finishSwipe}>
+                      Show my vibe
+                    </button>
+                  ) : null} />
               ) : error ? (
                 <div style={{ flex: 1, display: "grid", placeItems: "center", textAlign: "center", gap: 16 }}>
                   <p className="muted">{error}</p>
@@ -128,11 +133,6 @@ export function Onboarding({ taste, setTaste, onDone }: { taste: Taste; setTaste
                 <div style={{ flex: 1, display: "grid", placeItems: "center" }}>
                   <Poster width={300} />
                 </div>
-              )}
-              {deck && rated.length >= 6 && rated.length < deck.length && (
-                <button className="btn" style={{ background: "none", color: "var(--muted)", height: 40, fontSize: 15, alignSelf: "center" }} onClick={finishSwipe}>
-                  That&apos;s enough — show my vibe
-                </button>
               )}
             </section>
 

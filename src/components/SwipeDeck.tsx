@@ -25,7 +25,7 @@ const DEMO: Record<Verdict, string> = {
 const KEYS: Record<string, Verdict> = { ArrowRight: "love", ArrowLeft: "nope", ArrowUp: "unseen", ArrowDown: "meh" };
 const T = 90;
 
-export function SwipeDeck({ movies, onRate, onEmpty, tutorial }: { movies: Movie[]; onRate: (m: Movie, v: AnyVerdict) => void; onEmpty: () => void; tutorial: boolean }) {
+export function SwipeDeck({ movies, onRate, onEmpty, tutorial, footer }: { movies: Movie[]; onRate: (m: Movie, v: AnyVerdict) => void; onEmpty: () => void; tutorial: boolean; footer?: React.ReactNode }) {
   const [idx, setIdx] = useState(0);
   const [out, setOut] = useState<Record<number, Verdict>>({});
   const [drag, setDrag] = useState<{ dx: number; dy: number } | null>(null);
@@ -191,9 +191,12 @@ export function SwipeDeck({ movies, onRate, onEmpty, tutorial }: { movies: Movie
               <button className="icon-btn sm" aria-label="Haven't seen it" onClick={() => rate("unseen")}>{Icon.eyeOff()}</button>
               <button className="icon-btn light" aria-label="Loved it" onClick={() => rate("love")}>{Icon.heart()}</button>
             </div>
-            <button className="btn" style={{ background: "transparent", color: "var(--muted)", height: 44, fontSize: 15 }} onClick={() => { setTut(true); setStep(0); }}>
-              Show me again
-            </button>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+              <button className="btn" style={{ background: "transparent", color: "var(--muted)", height: 44, fontSize: 15 }} onClick={() => { setTut(true); setStep(0); }}>
+                Show me again
+              </button>
+              {footer}
+            </div>
           </div>
         ) : null}
       </div>
