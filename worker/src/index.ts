@@ -36,8 +36,10 @@ const PROMPTS: Record<string, string> = {
     "You are CINE AI, a warm movie concierge for viewers in India. Turn the viewer's mood into search filters, " +
     "respecting their taste profile. Reply with ONLY a JSON object: " +
     '{"reply": string (max 8 words, friendly, no emoji), "include": [TMDB genre ids], "exclude": [TMDB genre ids], ' +
-    '"languages": [ISO 639-1 codes, ONLY if the viewer explicitly asked for a language, else []], ' +
-    '"titles": [{"title": string, "year": number}] (up to 8 real, released feature films that fit both the mood and the taste; mix languages from the profile)}. ' +
+    '"languages": [two-letter ISO 639-1 codes like "hi" or "ko", ONLY if the viewer explicitly named a language in their message, otherwise []], ' +
+    '"titles": [{"title": string, "year": number}] (up to 8 real, well-known, released feature films that fit the mood; at least half of them in the viewer\'s profile languages, using their common English title)}. ' +
+    "Rules: genres in include must directly express the mood. If the viewer says no gore / not gory / not scary, put 27 (Horror) in exclude. " +
+    "Never put the same id in include and exclude. " +
     `TMDB genre ids: ${GENRES}.`,
   why:
     "You are CINE AI. For each film, write one short reason (max 12 words) why it fits the viewer's mood and taste. " +
@@ -70,8 +72,8 @@ export default {
       if (req.method === "POST" && ai) {
         const raw = await req.text();
         if (raw.length > 8000) return json({ error: "too large" }, 413, headers);
-        const result = await complete(env, PROMPTS[ai[1]], raw);
-        return json(result, 200, headers);
+        const { result, provider, note } = await complete(env, PROMPTS[ai[1]], raw);
+        return json(result, 200, { ...headers, "x-ai-provider": provider, ...(note ? { "x-ai-note": note.slice(0, 200) } : {}), "access-control-expose-headers": "x-ai-provider, x-ai-note" });
       }
       return json({ error: "not found" }, 404, headers);
     } catch (e) {
@@ -107,7 +109,7 @@ async function tmdb(url: URL, env: Env, ctx: ExecutionContext, headers: Record<s
   return withHeaders(res, headers);
 }
 
-async function complete(env: Env, system: string, user: string): Promise<unknown> {
+async function complete(env: Env, system: string, user: string): Promise<{ result: unknown; provider: string; note?: string }> {
   const errors: string[] = [];
   if (env.GROQ_API_KEY) {
     try {
@@ -122,9 +124,9 @@ async function complete(env: Env, system: string, user: string): Promise<unknown
           messages: [{ role: "system", content: system }, { role: "user", content: user }],
         }),
       });
-      if (!r.ok) throw new Error(`groq ${r.status}`);
+      if (!r.ok) throw new Error(`groq ${r.status}: ${(await r.text()).slice(0, 160)}`);
       const data = (await r.json()) as { choices?: { message?: { content?: string } }[] };
-      return parseJson(data.choices?.[0]?.message?.content ?? "");
+      return { result: parseJson(data.choices?.[0]?.message?.content ?? ""), provider: `groq/${env.GROQ_MODEL}` };
     } catch (e) {
       errors.push((e as Error).message);
     }
@@ -135,7 +137,8 @@ async function complete(env: Env, system: string, user: string): Promise<unknown
         messages: [{ role: "system", content: system }, { role: "user", content: user }],
         max_tokens: 700,
       } as never)) as { response?: string | object };
-      return typeof out.response === "string" ? parseJson(out.response) : out.response;
+      const result = typeof out.response === "string" ? parseJson(out.response) : out.response;
+      return { result, provider: `workers-ai/${env.CF_AI_MODEL}`, note: errors.join("; ") || undefined };
     } catch (e) {
       errors.push(`workers-ai: ${(e as Error).message}`);
     }

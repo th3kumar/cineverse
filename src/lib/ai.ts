@@ -53,16 +53,29 @@ export function offlineMood(text: string): MoodPlan {
   return { include: [...include], exclude: [...exclude], reply: "Here's what fits.", titles: [], languages: [] };
 }
 
+/** Accept "hi" or "Hindi", but only languages the viewer actually named in their message. */
+function toLangCodes(raw: unknown, text: string): string[] {
+  if (!Array.isArray(raw)) return [];
+  const byName = Object.fromEntries(Object.entries(LANG_NAMES).map(([code, name]) => [name.toLowerCase(), code]));
+  const said = text.toLowerCase();
+  return raw
+    .map((x) => (typeof x === "string" ? x.trim().toLowerCase() : ""))
+    .map((x) => (LANG_NAMES[x] ? x : byName[x] ?? ""))
+    .filter((code) => code && said.includes(LANG_NAMES[code].toLowerCase()))
+    .slice(0, 4);
+}
+
 export async function planMood(text: string, t: Taste): Promise<MoodPlan> {
   try {
     const r = await post<Partial<MoodPlan>>("/ai/mood", { text, profile: profileBrief(t) });
     const valid = (xs: unknown) => (Array.isArray(xs) ? xs.map(Number).filter((g) => GENRE_NAMES[g]) : []);
+    const include = valid(r.include);
     return {
-      include: valid(r.include),
-      exclude: valid(r.exclude),
+      include,
+      exclude: valid(r.exclude).filter((g) => !include.includes(g)),
       reply: typeof r.reply === "string" && r.reply ? r.reply.slice(0, 80) : "Here's what fits.",
       titles: Array.isArray(r.titles) ? r.titles.filter((x) => x && typeof x.title === "string").slice(0, 10) : [],
-      languages: Array.isArray(r.languages) ? r.languages.filter((x): x is string => typeof x === "string").slice(0, 4) : [],
+      languages: toLangCodes(r.languages, text),
     };
   } catch {
     return offlineMood(text);
