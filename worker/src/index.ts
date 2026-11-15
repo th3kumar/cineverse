@@ -112,23 +112,27 @@ async function tmdb(url: URL, env: Env, ctx: ExecutionContext, headers: Record<s
 async function complete(env: Env, system: string, user: string): Promise<{ result: unknown; provider: string; note?: string }> {
   const errors: string[] = [];
   if (env.GROQ_API_KEY) {
-    try {
-      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { authorization: `Bearer ${env.GROQ_API_KEY}`, "content-type": "application/json" },
-        body: JSON.stringify({
-          model: env.GROQ_MODEL,
-          temperature: 0.6,
-          max_tokens: 700,
-          response_format: { type: "json_object" },
-          messages: [{ role: "system", content: system }, { role: "user", content: user }],
-        }),
-      });
-      if (!r.ok) throw new Error(`groq ${r.status}: ${(await r.text()).slice(0, 160)}`);
-      const data = (await r.json()) as { choices?: { message?: { content?: string } }[] };
-      return { result: parseJson(data.choices?.[0]?.message?.content ?? ""), provider: `groq/${env.GROQ_MODEL}` };
-    } catch (e) {
-      errors.push((e as Error).message);
+    // GROQ_MODEL may list several models, tried in order (e.g. a bigger one, then a faster one).
+    for (const model of env.GROQ_MODEL.split(",").map((m) => m.trim()).filter(Boolean)) {
+      try {
+        const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { authorization: `Bearer ${env.GROQ_API_KEY}`, "content-type": "application/json" },
+          body: JSON.stringify({
+            model,
+            temperature: 0.6,
+            max_completion_tokens: 1500,
+            response_format: { type: "json_object" },
+            ...(model.includes("gpt-oss") ? { reasoning_effort: "low" } : {}),
+            messages: [{ role: "system", content: system }, { role: "user", content: user }],
+          }),
+        });
+        if (!r.ok) throw new Error(`groq ${model} ${r.status}: ${(await r.text()).slice(0, 120)}`);
+        const data = (await r.json()) as { choices?: { message?: { content?: string } }[] };
+        return { result: parseJson(data.choices?.[0]?.message?.content ?? ""), provider: `groq/${model}`, note: errors.join("; ") || undefined };
+      } catch (e) {
+        errors.push((e as Error).message);
+      }
     }
   }
   if (env.AI) {
