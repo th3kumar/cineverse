@@ -1,16 +1,10 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  test-and-build:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,5 +17,6 @@ jobs:
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
-      # next build generates next-env.d.ts (needed for CSS imports), so typecheck after it.
       - run: npm run typecheck
+      - run: npm ci && npx tsc --noEmit
+        working-directory: worker

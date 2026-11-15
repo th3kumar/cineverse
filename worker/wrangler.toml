@@ -1,0 +1,17 @@
+name = "cineverse-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+# Cloudflare Workers AI: free daily allowance, used as the backup model.
+[ai]
+binding = "AI"
+
+[vars]
+ALLOWED_ORIGINS = "https://th3kumar.github.io,http://localhost:3000"
+GROQ_MODEL = "llama-3.3-70b-versatile"
+CF_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
+
+# Secrets (set by the deploy workflow, never committed):
+#   TMDB_TOKEN    TMDB API Read Access Token
+#   GROQ_API_KEY  Groq API key

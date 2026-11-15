@@ -1,17 +1,21 @@
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 
-export const metadata = { title: "CINEVERSE PLAY", description: "AI movie discovery with legal playback" };
+export const metadata: Metadata = {
+  title: "CINEVERSE — find the film that fits your mood",
+  description: "Tell CINE AI your vibe and get films that match — with real posters, trailers and where to watch.",
+};
+
+export const viewport: Viewport = { themeColor: "#000000", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        <header className="top">
-          <a href="/" className="brand">CINEVERSE <span>PLAY</span></a>
-        </header>
-        <main>{children}</main>
-      </body>
+      <head>
+        <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="" />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
