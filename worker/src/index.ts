@@ -39,6 +39,8 @@ const PROMPTS: Record<string, string> = {
     '"languages": [two-letter ISO 639-1 codes like "hi" or "ko", ONLY if the viewer explicitly named a language in their message, otherwise []], ' +
     '"titles": [{"title": string, "year": number}] (up to 8 real, well-known, released feature films that fit the mood; at least half of them in the viewer\'s profile languages, using their common English title)}. ' +
     "Rules: genres in include must directly express the mood. If the viewer says no gore / not gory / not scary, put 27 (Horror) in exclude. " +
+    "For light, cozy, funny, feel-good or romantic moods, exclude 53 (Thriller), 27 (Horror) and 80 (Crime). " +
+    "Suggested titles must fit tonight's mood first; the taste profile only breaks ties. " +
     "Never put the same id in include and exclude. " +
     `TMDB genre ids: ${GENRES}.`,
   why:

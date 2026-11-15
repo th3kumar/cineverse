@@ -132,9 +132,10 @@ export function SwipeDeck({ movies, onRate, onEmpty, tutorial }: { movies: Movie
                 if (!start.current) return;
                 setDrag({ dx: e.clientX - start.current.x, dy: e.clientY - start.current.y });
               }}
-              onPointerUp={() => {
-                if (!start.current || !drag) return;
-                const v = decide(drag.dx, drag.dy);
+              onPointerUp={(e) => {
+                if (!start.current) return;
+                // Read the release point from the event: a fast flick can end before React re-renders.
+                const v = decide(e.clientX - start.current.x, e.clientY - start.current.y);
                 if (v) rate(v);
                 else {
                   start.current = null;
@@ -159,7 +160,7 @@ export function SwipeDeck({ movies, onRate, onEmpty, tutorial }: { movies: Movie
                   <span className="stamp" style={{ top: 22, right: 20, opacity: amount("nope") }}>Not for me</span>
                   <span className="stamp" style={{ top: 22, left: "50%", translate: "-50% 0", opacity: amount("meh") }}>Meh</span>
                   <span className="stamp" style={{ bottom: 100, left: "50%", translate: "-50% 0", opacity: amount("unseen") }}>Haven&apos;t seen</span>
-                  <span className="finger" style={{ opacity: tut ? 1 : 0 }} />
+                  {tut && <span className="finger" />}
                 </>
               )}
             </div>

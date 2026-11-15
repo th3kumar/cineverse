@@ -50,7 +50,7 @@ export async function picksFor(t: Taste, mood?: MoodFilter & { titles?: { title:
     calls.push(discover({ with_original_language: l, with_genres: genres.join("|") || undefined, without_genres: without, "vote_count.gte": l === "en" ? 300 : 40, sort_by: "popularity.desc" }));
     calls.push(discover({ with_original_language: l, with_genres: genres.join("|") || undefined, without_genres: without, "vote_count.gte": l === "en" ? 1000 : 80, sort_by: "vote_average.desc" }));
   }
-  for (const l of t.loved.slice(0, 3)) calls.push(recommendationsFor(l.id));
+  if (!mood?.include.length) for (const l of t.loved.slice(0, 3)) calls.push(recommendationsFor(l.id));
   const aiTitles = (mood?.titles ?? []).slice(0, 8);
   const aiPicks = Promise.all(aiTitles.map((x) => resolveTitle(x.title, x.year).catch(() => null))).then((xs) => xs.filter((x): x is Movie => !!x));
   const [pool, suggested] = await Promise.all([settled(calls), aiPicks]);

@@ -103,20 +103,35 @@ export function score(t: Taste, m: Movie, mood?: MoodFilter, keywordIds: number[
   const langFit = (t.lang[m.original_language] ?? -0.5) / norm(t.lang);
   const kN = norm(t.keyword);
   const kwFit = keywordIds.reduce((s, k) => s + (t.keyword[k] ?? 0) / kN, 0) * 0.3;
-  const moodFit = mood ? mood.include.filter((x) => g.includes(x)).length * 0.8 : 0;
+  // When the viewer asks for a mood, it should beat long-term taste.
+  const hits = mood ? mood.include.filter((x) => g.includes(x)).length : 0;
+  const moodFit = mood && mood.include.length ? (hits ? 1.6 + 0.5 * (hits - 1) : -2.5) : 0;
   const quality = ((m.vote_average ?? 6) - 6) * 0.15 + Math.min(1, Math.log10((m.vote_count ?? 1) + 1) / 4) * 0.3;
   return genreFit * 1.2 + langFit + kwFit + moodFit + quality;
 }
 
 export function rank(t: Taste, movies: Movie[], mood?: MoodFilter, n = 12): Movie[] {
   const seen = new Set<number>();
-  return movies
+  const sorted = movies
     .filter((m) => m.poster_path && !seen.has(m.id) && seen.add(m.id))
     .map((m) => ({ m, s: score(t, m, mood) }))
     .filter((x) => Number.isFinite(x.s))
     .sort((a, b) => b.s - a.s)
-    .slice(0, n)
     .map((x) => x.m);
+  return diversify(sorted, n);
+}
+
+/** Keep rank order but don't let one language take over the top of the list. */
+export function diversify(sorted: Movie[], n: number, maxRun = 2): Movie[] {
+  const out: Movie[] = [];
+  const pool = [...sorted];
+  while (out.length < n && pool.length) {
+    const recent = out.slice(-maxRun).map((m) => m.original_language);
+    const runLang = recent.length === maxRun && recent.every((l) => l === recent[0]) ? recent[0] : null;
+    const i = runLang ? pool.findIndex((m) => m.original_language !== runLang) : 0;
+    out.push(pool.splice(i === -1 ? 0 : i, 1)[0]);
+  }
+  return out;
 }
 
 /** Top genre ids by learned weight, for building queries and offline "vibe" text. */

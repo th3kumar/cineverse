@@ -63,3 +63,17 @@ describe("offline mood fallback (works with no AI)", () => {
     expect(offlineMood("make me laugh").include).toContain(35);
   });
 });
+
+describe("mood vs taste", () => {
+  it("a light mood beats a thriller-heavy taste", () => {
+    let t = seed(emptyTaste(), ["ko"], [53], []);
+    for (let i = 0; i < 5; i++) t = learn(t, m(100 + i, [53, 80], "ko"), "love");
+    const ranked = rank(t, [m(1, [53, 80], "ko"), m(2, [35, 10749], "ko")], { include: [35, 10749], exclude: [] }, 2);
+    expect(ranked[0].id).toBe(2);
+  });
+  it("spreads languages across the top picks", async () => {
+    const { diversify } = await import("../src/lib/taste");
+    const list = [m(1, [35], "ko"), m(2, [35], "ko"), m(3, [35], "ko"), m(4, [35], "hi")];
+    expect(diversify(list, 4).map((x) => x.original_language)).toEqual(["ko", "ko", "hi", "ko"]);
+  });
+});

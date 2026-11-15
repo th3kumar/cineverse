@@ -85,7 +85,7 @@ export function Home({ taste, setTaste, onRestart }: { taste: Taste; setTaste: (
     setInput("");
     setAsking(true);
     setAsk({ text: q, reply: "", movies: [], reasons: {} });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    requestAnimationFrame(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
     try {
       const plan = await planMood(q, taste);
       const movies = await picksFor(taste, plan, 10);
@@ -170,7 +170,7 @@ export function Home({ taste, setTaste, onRestart }: { taste: Taste; setTaste: (
         </div>
 
         {ask && (
-          <section aria-live="polite" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <section id="results" aria-live="polite" style={{ display: "flex", flexDirection: "column", gap: 16, scrollMarginTop: 16 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <p className="rise" style={{ margin: 0, alignSelf: "flex-end", maxWidth: 420, padding: "10px 16px", borderRadius: 20, background: "var(--glass)", fontSize: 16 }}>{ask.text}</p>
               <h2 className="h2 rise" style={{ fontSize: 28, minHeight: 34 }}>{asking && !ask.reply ? "Thinking…" : ask.reply}</h2>
